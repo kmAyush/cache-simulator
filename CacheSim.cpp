@@ -57,3 +57,78 @@ std::tuple<bool, std::uint64_t, int> CacheSimulator::parse_trace_line(const std:
   sscanf(line.c_str(), "# %d %lx %d", &is_write, &address, &instructions);
   return {is_write, address, instructions};
 }
+
+std::tuple<bool, bool> CacheSimulator::access_cache(bool is_write, std::uint64_t address) {
+  // Extract set index and tag from memory address
+  auto set_index = extract_set_index(address);
+  auto tag = extract_tag(address);
+
+  // Base index for this set in the cache state arrays
+  auto base_index = set_index * associativity_;
+
+  // Create spans for set-specific data
+  std::span set_tags{tag_store_.data() + base_index, associativity_};
+  std::span set_dirty_bits{dirty_bit_store_.data() + base_index, associativity_};
+  std::span set_valid_bits{valid_bit_store_.data() + base_index, associativity_};
+  std::span set_priority{priority_store_.data() + base_index, associativity_};
+
+  // Initialize flags and variables for hit/miss handling
+  bool hit = false;
+  int replace_index = -1;  // Index of block to replace if miss occurs
+  bool dirty_writeback = false; // Indicates if a dirty block is evicted
+
+  // Check all blocks in the set for a hit or invalid entry
+  for (unsigned i = 0; i < associativity_; i++) {
+
+    // If block is valid and tags match, it's a cache hit
+    if (set_valid_bits[i] && set_tags[i] == tag) {
+      hit = true;
+      replace_index = i;
+
+      // Mark the block as dirty if it's a write operation
+      set_dirty_bits[i] |= is_write;
+      break;
+    }
+    // Track the first invalid block for potential replacement
+    if (!set_valid_bits[i] && replace_index == -1) {
+      replace_index = i;
+    }
+  }
+
+  // Handle cache miss if no matching tag was found
+  if (!hit) {
+
+    // If no invalid block is available, evict the least prioritized block
+    if (replace_index == -1) {
+      auto max_priority = std::ranges::max_element(set_priority);
+      replace_index = std::distance(set_priority.begin(), max_priority);
+
+      // Record if the evicted block is dirty
+      dirty_writeback = set_dirty_bits[replace_index];
+    }
+
+    // Replace the block with the new tag and update states
+    set_tags[replace_index] = tag;
+    set_dirty_bits[replace_index] = is_write;
+    set_valid_bits[replace_index] = 1;  // Mark block as valid
+  }
+
+  // Update replacement priorities for all blocks in the set
+  for (auto& p : set_priority) {
+    if (p < associativity_ - 1) p++;  // Increment priority for all blocks
+  }
+  set_priority[replace_index] = 0;  // Set the accessed/replaced block to the highest priority
+
+  // Return (hit and if dirty block was evicted)
+  return {hit, dirty_writeback};
+}
+
+// Extract set index by shifting the address and applying the set mask
+int CacheSimulator::extract_set_index(std::uint64_t address) {
+  return (address >> set_offset_) & set_mask_;
+}
+
+// Extract tag by shifting the address to remove set and offset bits
+std::uint64_t CacheSimulator::extract_tag(std::uint64_t address) {
+  return address >> tag_offset_;
+}
