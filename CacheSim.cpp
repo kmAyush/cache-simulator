@@ -36,7 +36,24 @@ CacheSimulator::CacheSimulator(std::string input_file, unsigned block_size, unsi
   tag_offset_ = block_bits + std::popcount(set_mask_);
 }
 
+void CacheSimulator::run() {
+  std::string line;
+  while (std::getline(trace_file, line)) {
+    auto [is_write, address, instructions] = parse_trace_line(line);
+    auto [hit, dirty_writeback] = access_cache(is_write, address);
+    update_statistics(instructions, is_write, hit, dirty_writeback);
+  }
+}
+
 // Destructor
 CacheSimulator::~CacheSimulator() {
   trace_file.close();
+}
+
+std::tuple<bool, std::uint64_t, int> CacheSimulator::parse_trace_line(const std::string& line) {
+  int is_write;
+  std::uint64_t address;
+  int instructions;
+  sscanf(line.c_str(), "# %d %lx %d", &is_write, &address, &instructions);
+  return {is_write, address, instructions};
 }
