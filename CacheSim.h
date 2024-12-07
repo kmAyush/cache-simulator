@@ -1,14 +1,17 @@
 #ifndef CACHESIM_H
 #define CACHESIM_H
 
-#include<iostream>
-#include<fstream>
-#include<vector>
-#include<string>
-#include<string>
-#include<tuple>
-#include<span>
-#include<cstdint>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <span>
+#include <cstdint>
+#include <algorithm>
+#include <bit>
+#include <ranges>
+#include <tuple>
+#include <vector>
+
 
 class CacheSimulator{
 public:
@@ -18,7 +21,7 @@ public:
 		unsigned associativity,
 		unsigned cache_size,
 		unsigned miss_penalty,
-		unsigned dirty_wb_penalty);
+		unsigned dirty_writeback_penalty);
 	
 	void run();
 	~CacheSimulator();
@@ -68,6 +71,8 @@ private:
 
 	// Updates the performance statistics after a memory access.
 	void update_statistics(int instructions, bool is_write, bool hit, bool dirty_writeback);
+
+	void print_statistics();
 };
 
 #endif

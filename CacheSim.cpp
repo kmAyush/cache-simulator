@@ -2,6 +2,7 @@
 #include <bit>
 #include <cassert>
 #include <algorithm>
+#include <ranges>
 
 // Constructor
 CacheSimulator::CacheSimulator(std::string input_file, unsigned block_size, unsigned associativity,
@@ -42,7 +43,16 @@ void CacheSimulator::run() {
     auto [is_write, address, instructions] = parse_trace_line(line);
     auto [hit, dirty_writeback] = access_cache(is_write, address);
     update_statistics(instructions, is_write, hit, dirty_writeback);
+
+    std::cout << "Instruction " << instruction_count_ << ": "
+              << (is_write ? "WRITE" : "READ") << " "
+              << "Address: 0x" << std::hex << address << std::dec
+              << " | Hit: " << (hit ? "Yes" : "No")
+              << " | Dirty Writeback: " << (dirty_writeback ? "Yes" : "No")
+              << " | Instructions: " << instructions << '\n';
   }
+
+  print_statistics();
 }
 
 // Destructor
@@ -131,4 +141,29 @@ int CacheSimulator::extract_set_index(std::uint64_t address) {
 // Extract tag by shifting the address to remove set and offset bits
 std::uint64_t CacheSimulator::extract_tag(std::uint64_t address) {
   return address >> tag_offset_;
+}
+
+
+void CacheSimulator::update_statistics(int instructions, bool is_write, bool hit, bool dirty_writeback) {
+  memory_access_count_++;
+  write_count_ += is_write;
+  miss_count_ += !hit;
+  instruction_count_ += instructions;
+  dirty_writeback_count_ += dirty_writeback;
+}
+
+void CacheSimulator::print_statistics() {
+  std::cout << "CACHE CONFIGURATION\n";
+  std::cout << "Cache Size (Bytes): " << cache_capacity_ << '\n';
+  std::cout << "Associativity: " << associativity_ << '\n';
+  std::cout << "Block Size (Bytes): " << block_size_ << '\n';
+  std::cout << "Miss Penalty (Cycles): " << miss_penalty_ << '\n';
+  std::cout << "Dirty Writeback Penalty (Cycles): " << dirty_writeback_penalty_ << '\n';
+
+  double miss_rate = (double)miss_count_ / memory_access_count_ * 100.0;
+  auto total_cycles = miss_penalty_ * miss_count_ + instruction_count_;
+  double ipc = (double)instruction_count_ / total_cycles;
+
+  std::cout << "MISS RATE: " << miss_rate << "%\n";
+  std::cout << "IPC: " << ipc << '\n';
 }
