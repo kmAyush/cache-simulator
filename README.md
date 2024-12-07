@@ -1,4 +1,4 @@
-# **CPU Cache Simulator**
+# **Trace-Based Cache Simulator**
 This project implements a configurable **CPU Cache Simulator** that emulates the behavior of a cache in a computing system. The simulator processes memory access traces and provides insights into cache performance, including:
 - **Cache Hits/Misses**
 - **Dirty Writebacks**
