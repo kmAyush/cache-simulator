@@ -40,7 +40,7 @@ The workflow involves the following steps:
    - After each memory access, performance statistics (e.g., total accesses, misses, dirty writebacks) are updated.
 
 5. **Output**:
-   - Outputs details for each memory access, followed by a final summary of cache performance metrics.
+   - Output details for each memory access and a final summary of cache performance metrics.
 
 
 ```plaintext
@@ -85,5 +85,5 @@ IPC: 0.150943
 ```
 
 ## **Acknowledgments**
-- Special thanks to [Nick from CoffeeBeforeArch](https://www.youtube.com/@CoffeeBeforeArch) for inspiring this project and sharing knowledge on cache simulators.
+- Special thanks to [Nick from CoffeeBeforeArch](https://github.com/coffeebeforearch) for inspiring this project and sharing knowledge on cache simulators.
 
